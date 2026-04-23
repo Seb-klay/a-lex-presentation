@@ -51,14 +51,14 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/signup"
+              href="https://chat.a-lex.app/signup"
               className="px-8 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105"
               style={{ backgroundColor: "#4a5568", color: "white" }}
             >
               Get Started
             </Link>
             <Link
-              href="/signin"
+              href="https://chat.a-lex.app/signin"
               className="px-8 py-3 rounded-xl font-semibold transition-all duration-300 backdrop-blur-md border hover:bg-white/20"
               style={{ borderColor: "#4a5568", color: "#4a5568" }}
             >
