@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
-// Translations
 const translations = {
   fr: {
     hero: {
@@ -196,16 +195,16 @@ const translations = {
   }
 };
 
-type Language =  "fr" | "en" | "de";
+type Language = "fr" | "en" | "de";
 
 export default function Home() {
   const [language, setLanguage] = useState<Language>("fr");
-  const observerRef = useRef<IntersectionObserver | null>(null);
   const t = translations[language];
 
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const elementsRef = useRef<Set<HTMLElement>>(new Set());
+
   useEffect(() => {
-    if (typeof window === "undefined" || !("IntersectionObserver" in window)) return;
-    
     observerRef.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -214,17 +213,29 @@ export default function Home() {
           }
         });
       },
-      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" },
+      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
     );
 
-    const elements = document.querySelectorAll(".animate-on-scroll");
-    elements.forEach((el) => observerRef.current?.observe(el));
+    elementsRef.current.forEach((el) => {
+      if (el) observerRef.current?.observe(el);
+    });
 
     return () => {
-      elements.forEach((el) => observerRef.current?.unobserve(el));
+      elementsRef.current.forEach((el) => {
+        if (el) observerRef.current?.unobserve(el);
+      });
       observerRef.current?.disconnect();
     };
-  }, [language]); // Re-run when language changes to re-animate
+  }, [language]);
+
+  // A helper function that acts as a dynamic callback ref
+  const registerAnimationRef = (el: HTMLElement | null) => {
+    if (el) {
+      elementsRef.current.add(el);
+      // If observer is ready right now, watch it immediately
+      if (observerRef.current) observerRef.current.observe(el);
+    }
+  };
 
   const changeLanguage = (lang: Language) => {
     setLanguage(lang);
@@ -234,55 +245,30 @@ export default function Home() {
     <div className="min-h-screen" style={{ backgroundColor: "#e5e7eb" }}>
       {/* Language Switcher */}
       <div className="fixed top-4 right-4 z-50 flex gap-2 bg-white/80 backdrop-blur-md rounded-full p-1 shadow-lg">
-        <button
-          onClick={() => changeLanguage("en")}
-          className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 ${
-            language === "en"
-              ? "bg-gray-700 text-white"
-              : "text-gray-600 hover:bg-gray-200"
-          }`}
-        >
-          EN
-        </button>
-        <button
-          onClick={() => changeLanguage("fr")}
-          className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 ${
-            language === "fr"
-              ? "bg-gray-700 text-white"
-              : "text-gray-600 hover:bg-gray-200"
-          }`}
-        >
-          FR
-        </button>
-        <button
-          onClick={() => changeLanguage("de")}
-          className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 ${
-            language === "de"
-              ? "bg-gray-700 text-white"
-              : "text-gray-600 hover:bg-gray-200"
-          }`}
-        >
-          DE
-        </button>
+        {(["en", "fr", "de"] as Language[]).map((lang) => (
+          <button
+            key={lang}
+            onClick={() => changeLanguage(lang)}
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 ${
+              language === lang ? "bg-gray-700 text-white" : "text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            {lang.toUpperCase()}
+          </button>
+        ))}
       </div>
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden px-4">
-        <div className="absolute inset-0 bg-linear-to-br from-white/30 to-transparent pointer-events-none" />
-        <div className="max-w-6xl mx-auto text-center z-10 animate-on-scroll">
-          <h1
-            className="text-5xl md:text-7xl font-bold mb-6"
-            style={{ color: "#4a5568" }}
-          >
+        <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent pointer-events-none" />
+        <div className="max-w-6xl mx-auto text-center z-10 animate-on-scroll" ref={registerAnimationRef}>
+          <h1 className="text-5xl md:text-7xl font-bold mb-6" style={{ color: "#4a5568" }}>
             {t.hero.title1} <br />
-            <span className="bg-clip-text text-transparent bg-linear-to-r from-gray-700 to-gray-500">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-700 to-gray-500">
               {t.hero.title2}
             </span>
           </h1>
-          <p
-            className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto"
-            style={{ color: "#718096" }}
-          >
+          <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto" style={{ color: "#718096" }}>
             {t.hero.description}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -303,14 +289,8 @@ export default function Home() {
           </div>
         </div>
         <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <div
-            className="w-6 h-10 border-2 rounded-full flex justify-center"
-            style={{ borderColor: "#4a5568" }}
-          >
-            <div
-              className="w-1 h-2 rounded-full mt-2 animate-pulse"
-              style={{ backgroundColor: "#4a5568" }}
-            />
+          <div className="w-6 h-10 border-2 rounded-full flex justify-center" style={{ borderColor: "#4a5568" }}>
+            <div className="w-1 h-2 rounded-full mt-2 animate-pulse" style={{ backgroundColor: "#4a5568" }} />
           </div>
         </div>
       </section>
@@ -321,6 +301,7 @@ export default function Home() {
           <h2
             className="text-3xl md:text-4xl font-bold text-center mb-16 animate-on-scroll"
             style={{ color: "#4a5568" }}
+            ref={registerAnimationRef}
           >
             {t.quickIntro.title}
           </h2>
@@ -331,6 +312,7 @@ export default function Home() {
                 <h3
                   className="text-2xl md:text-3xl font-bold mb-3 animate-on-scroll"
                   style={{ color: "#4a5568" }}
+                  ref={registerAnimationRef}
                 >
                   {t.quickIntro.feature1.title}
                 </h3>
@@ -339,6 +321,7 @@ export default function Home() {
                 <p
                   className="text-lg leading-relaxed animate-on-scroll"
                   style={{ color: "#718096" }}
+                  ref={registerAnimationRef}
                 >
                   {t.quickIntro.feature1.description}
                 </p>
@@ -351,14 +334,12 @@ export default function Home() {
                 <h3
                   className="text-2xl md:text-3xl font-bold mb-3 flex items-center gap-3 flex-wrap animate-on-scroll"
                   style={{ color: "#4a5568" }}
+                  ref={registerAnimationRef}
                 >
                   {t.quickIntro.feature2.title}
                   <span
                     className="text-sm px-3 py-1 rounded-full font-medium"
-                    style={{
-                      backgroundColor: "rgba(219, 234, 254, 0.8)",
-                      color: "#4a5568",
-                    }}
+                    style={{ backgroundColor: "rgba(219, 234, 254, 0.8)", color: "#4a5568" }}
                   >
                     {t.quickIntro.feature2.badge}
                   </span>
@@ -368,6 +349,7 @@ export default function Home() {
                 <p
                   className="text-lg leading-relaxed animate-on-scroll"
                   style={{ color: "#718096" }}
+                  ref={registerAnimationRef}
                 >
                   {t.quickIntro.feature2.description}
                 </p>
@@ -380,6 +362,7 @@ export default function Home() {
                 <h3
                   className="text-2xl md:text-3xl font-bold mb-3 animate-on-scroll"
                   style={{ color: "#4a5568" }}
+                  ref={registerAnimationRef}
                 >
                   {t.quickIntro.feature3.title}
                 </h3>
@@ -388,6 +371,7 @@ export default function Home() {
                 <p
                   className="text-lg leading-relaxed animate-on-scroll"
                   style={{ color: "#718096" }}
+                  ref={registerAnimationRef}
                 >
                   {t.quickIntro.feature3.description}
                 </p>
@@ -403,6 +387,7 @@ export default function Home() {
           <h2
             className="text-3xl md:text-4xl font-bold text-center mb-12 animate-on-scroll"
             style={{ color: "#4a5568" }}
+            ref={registerAnimationRef}
           >
             {t.features.title}
           </h2>
@@ -410,78 +395,56 @@ export default function Home() {
             <FeatureCard
               title={t.features.ai.title}
               items={t.features.ai.items}
-              delay={0}
+              registerRef={registerAnimationRef}
             />
             <FeatureCard
               title={t.features.dataPrivacy.title}
               items={t.features.dataPrivacy.items}
-              delay={1}
+              registerRef={registerAnimationRef}
             />
             <FeatureCard
               title={t.features.infrastructure.title}
               items={t.features.infrastructure.items}
-              delay={2}
+              registerRef={registerAnimationRef}
             />
             <FeatureCard
               title={t.features.endpointSecurity.title}
               items={t.features.endpointSecurity.items}
-              delay={3}
+              registerRef={registerAnimationRef}
             />
             <FeatureCard
               title={t.features.dataSecurity.title}
               items={t.features.dataSecurity.items}
-              delay={4}
               badge={t.features.dataSecurity.badge}
+              registerRef={registerAnimationRef}
             />
             <FeatureCard
               title={t.features.incidentResponse.title}
               items={t.features.incidentResponse.items}
-              delay={5}
+              registerRef={registerAnimationRef}
             />
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer
-        className="py-12 px-4 border-t"
-        style={{ backgroundColor: "#cbd5e1", borderColor: "#e5e7eb" }}
-      >
+      <footer className="py-12 px-4 border-t" style={{ backgroundColor: "#cbd5e1", borderColor: "#e5e7eb" }}>
         <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8 text-center md:text-left">
           <div>
-            <h4 className="font-bold mb-3" style={{ color: "#4a5568" }}>
-              {t.footer.contact}
-            </h4>
+            <h4 className="font-bold mb-3" style={{ color: "#4a5568" }}>{t.footer.contact}</h4>
             <p style={{ color: "#718096" }}>{t.footer.email}</p>
           </div>
           <div>
-            <h4 className="font-bold mb-3" style={{ color: "#4a5568" }}>
-              {t.footer.address}
-            </h4>
-            <p style={{ color: "#718096" }}>
-              {t.footer.addressLine1}
-              <br />
-              {t.footer.addressLine2}
-            </p>
+            <h4 className="font-bold mb-3" style={{ color: "#4a5568" }}>{t.footer.address}</h4>
+            <p style={{ color: "#718096" }}>{t.footer.addressLine1}<br />{t.footer.addressLine2}</p>
           </div>
           <div>
-            <h4 className="font-bold mb-3" style={{ color: "#4a5568" }}>
-              {t.footer.legal}
-            </h4>
-            <p style={{ color: "#718096" }}>
-              © {new Date().getFullYear()}
-              <br />
-              {t.footer.rights}
-            </p>
+            <h4 className="font-bold mb-3" style={{ color: "#4a5568" }}>{t.footer.legal}</h4>
+            <p style={{ color: "#718096" }}>© {new Date().getFullYear()}<br />{t.footer.rights}</p>
           </div>
         </div>
-        <div
-          className="max-w-6xl mx-auto text-center pt-8 mt-8 border-t"
-          style={{ borderColor: "#e5e7eb" }}
-        >
-          <p style={{ color: "#718096" }}>
-            {t.footer.swissLine}
-          </p>
+        <div className="max-w-6xl mx-auto text-center pt-8 mt-8 border-t" style={{ borderColor: "#e5e7eb" }}>
+          <p style={{ color: "#718096" }}>{t.footer.swissLine}</p>
         </div>
       </footer>
     </div>
@@ -491,30 +454,26 @@ export default function Home() {
 function FeatureCard({
   title,
   items,
-  delay,
   badge,
+  registerRef,
 }: {
   title: string;
   items: string[];
-  delay: number;
   badge?: string;
+  registerRef: (el: HTMLElement | null) => void;
 }) {
   return (
     <div
+      ref={registerRef}
       className="animate-on-scroll backdrop-blur-xl rounded-2xl border border-white/30 shadow-xl p-6 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1"
       style={{ backgroundColor: "rgba(255,255,255,0.4)" }}
     >
       <div className="flex justify-between items-start mb-4">
-        <h3 className="text-2xl font-bold" style={{ color: "#4a5568" }}>
-          {title}
-        </h3>
+        <h3 className="text-2xl font-bold" style={{ color: "#4a5568" }}>{title}</h3>
         {badge && (
           <span
             className="text-xs px-2 py-1 rounded-full whitespace-nowrap ml-2"
-            style={{
-              backgroundColor: "rgba(219, 234, 254, 0.8)",
-              color: "#4a5568",
-            }}
+            style={{ backgroundColor: "rgba(219, 234, 254, 0.8)", color: "#4a5568" }}
           >
             {badge}
           </span>
@@ -522,15 +481,8 @@ function FeatureCard({
       </div>
       <ul className="space-y-2">
         {items.map((item, idx) => (
-          <li
-            key={idx}
-            className="flex items-center gap-2"
-            style={{ color: "#718096" }}
-          >
-            <span
-              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{ backgroundColor: "#4a5568" }}
-            />
+          <li key={idx} className="flex items-center gap-2" style={{ color: "#718096" }}>
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#4a5568" }} />
             {item}
           </li>
         ))}
