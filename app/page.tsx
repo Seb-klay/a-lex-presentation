@@ -204,6 +204,8 @@ export default function Home() {
   const t = translations[language];
 
   useEffect(() => {
+    if (typeof window === "undefined" || !("IntersectionObserver" in window)) return;
+    
     observerRef.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -482,26 +484,6 @@ export default function Home() {
           </p>
         </div>
       </footer>
-
-      <style jsx global>{`
-        .animate-on-scroll {
-          opacity: 0;
-          transform: translateX(-30px);
-          transition:
-            opacity 0.8s cubic-bezier(0.2, 0.9, 0.4, 1.1),
-            transform 0.8s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-        }
-        .animate-on-scroll.animate-in {
-          opacity: 1;
-          transform: translateX(0);
-        }
-        .grid .animate-on-scroll:nth-child(even) {
-          transform: translateX(30px);
-        }
-        .grid .animate-on-scroll:nth-child(even).animate-in {
-          transform: translateX(0);
-        }
-      `}</style>
     </div>
   );
 }
